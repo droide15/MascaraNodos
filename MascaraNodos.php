@@ -9,28 +9,37 @@ $masc = json_decode($masc_json);
 $datos_extra = extraerMascara($datos, $masc);
 file_put_contents('datos_extra.json', json_encode($datos_extra));
 
-generarDom(key($datos_extra), $datos_extra);
+$prefijo = 'cfdi:';
+$doc_dom = new DomDocument('1.0', 'UTF-8');
 
-function generarDom($campo, $dato)
+xml2dom($doc_dom, $doc_dom, $prefijo, 'Comprobante', $datos_extra);
+echo $doc_dom->saveXML();
+
+function xml2dom($doc_dom, $elem_dom, $prefijo, $campo, $dato)
 {
     if(is_array($dato))
     {
+        $campo_temp = $campo;
+        $campo_temp = preg_replace('/as$/', 'a', $campo_temp);
+        $campo_temp = preg_replace('/os$/', 'o', $campo_temp);
+        $campo_temp = preg_replace('/ones$/', 'ón', $campo_temp);
+        $campo_temp = preg_replace('/es$/', '', $campo_temp);
+        $campo_temp = preg_replace('/s$/', '', $campo_temp);
+        if (preg_match('/s$/', $campo))
+            $nuevo_elem = crear_elemento($doc_dom, $elem_dom, $prefijo.$campo);
+        else
+            $nuevo_elem = $elem_dom;
         foreach($dato as $elem)
         {
-            $campo_temp = $campo;
-            $campo_temp = preg_replace('/as$/', 'a', $campo_temp);
-            $campo_temp = preg_replace('/os$/', 'o', $campo_temp);
-            $campo_temp = preg_replace('/ones$/', 'ón', $campo_temp);
-            $campo_temp = preg_replace('/es$/', '', $campo_temp);
-            $campo_temp = preg_replace('/s$/', '', $campo_temp);
-            generarDom($campo_temp, $elem);
+            xml2dom($doc_dom, $nuevo_elem, $prefijo, $campo_temp, $elem);
         }
     }
     else if(is_object($dato))
     {
+        $nuevo_elem = crear_elemento($doc_dom, $elem_dom, $prefijo.$campo);
         foreach($dato as $llave => $valor)
         {
-            generarDom($llave, $valor);
+            xml2dom($doc_dom, $nuevo_elem, $prefijo, $llave, $valor);
         }
     }
     else
@@ -39,19 +48,19 @@ function generarDom($campo, $dato)
     }
 }
 
-function crear_elemento($cfd, $parent, $name)
+function crear_elemento($doc_dom, $elem_dom, $nombre)
 {
-	$element = $cfd->createElement($name);
-	$parent->appendChild($element);
-	return $element;
+	$nuevo_elem = $doc_dom->createElement($nombre);
+	$elem_dom->appendChild($nuevo_elem);
+	return $nuevo_elem;
 }
 
-function crear_atributo($cfd, $element, $name, $value)
+function crear_atributo($doc_dom, $elem_dom, $campo, $valor)
 {
-	$new_attribute = $cfd->createAttribute($name);
-	$element->appendChild($new_attribute);
-	$attribute_value = $cfd->createTextNode($value);
-	$new_attribute->appendChild($attribute_value);
+	$atributo = $doc_dom->createAttribute($campo);
+	$elem_dom->appendChild($atributo);
+	$attribute_value = $doc_dom->createTextNode($valor);
+	$atributo->appendChild($attribute_value);
 }
 
 function extraerMascara($datos, $masc)
