@@ -44,7 +44,7 @@ function xml2dom($doc_dom, $elem_dom, $prefijo, $campo, $dato)
     }
     else
     {
-        echo $campo;
+        crear_atributo($doc_dom, $elem_dom, $campo, $dato);
     }
 }
 
